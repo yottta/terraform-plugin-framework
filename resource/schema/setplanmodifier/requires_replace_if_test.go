@@ -162,6 +162,40 @@ func TestRequiresReplaceIfModifierPlanModifySet(t *testing.T) {
 				RequiresReplace: false,
 			},
 		},
+		"write-only-with-null-config-value": {
+			request: planmodifier.SetRequest{
+				Plan:        testPlan(types.SetValueMust(types.StringType, []attr.Value{types.StringValue("test")})),
+				PlanValue:   types.SetNull(types.StringType),
+				State:       testState(types.SetValueMust(types.StringType, []attr.Value{types.StringValue("test")})),
+				StateValue:  types.SetNull(types.StringType),
+				ConfigValue: types.SetNull(types.StringType),
+				WriteOnly:   true,
+			},
+			ifFunc: func(ctx context.Context, req planmodifier.SetRequest, resp *setplanmodifier.RequiresReplaceIfFuncResponse) {
+				resp.RequiresReplace = true // should never reach here
+			},
+			expected: &planmodifier.SetResponse{
+				PlanValue:       types.SetNull(types.StringType),
+				RequiresReplace: false,
+			},
+		},
+		"write-only-with-actual-config-value": {
+			request: planmodifier.SetRequest{
+				Plan:        testPlan(types.SetValueMust(types.StringType, []attr.Value{types.StringValue("test")})),
+				PlanValue:   types.SetNull(types.StringType),
+				State:       testState(types.SetValueMust(types.StringType, []attr.Value{types.StringValue("test")})),
+				StateValue:  types.SetNull(types.StringType),
+				ConfigValue: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("value from config")}),
+				WriteOnly:   true,
+			},
+			ifFunc: func(ctx context.Context, req planmodifier.SetRequest, resp *setplanmodifier.RequiresReplaceIfFuncResponse) {
+				resp.RequiresReplace = true
+			},
+			expected: &planmodifier.SetResponse{
+				PlanValue:       types.SetNull(types.StringType),
+				RequiresReplace: true,
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
